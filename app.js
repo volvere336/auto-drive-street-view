@@ -71,6 +71,11 @@
     document.getElementById('speed-slider').addEventListener('input', updateSpeed);
     updateSpeed();
     
+    // Route options - add listeners that trigger route recalculation
+    document.getElementById('avoid-tolls').addEventListener('change', handleRouteOptionChange);
+    document.getElementById('avoid-highways').addEventListener('change', handleRouteOptionChange);
+    document.getElementById('avoid-ferries').addEventListener('change', handleRouteOptionChange);
+    
     // Position slider - drag to jump to any point on route
     document.getElementById('position-slider').addEventListener('input', (e) => {
       if (routePoints.length === 0) return;
@@ -88,6 +93,16 @@
     
     // Add stop button
     document.getElementById('add-stop-btn').addEventListener('click', addWaypointInput);
+  }
+  
+  // ==================== Route Options ====================
+  function handleRouteOptionChange() {
+    // Auto-recalculate route when options change (if we have origin and destination)
+    const origin = document.getElementById('origin-input').value.trim();
+    const destination = document.getElementById('destination-input').value.trim();
+    if (origin && destination) {
+      getRoute();
+    }
   }
   
   // ==================== Waypoints ====================
@@ -479,6 +494,21 @@
     };
     document.getElementById(buttonMap[mode]).classList.add('active');
     
+    // Show/hide route options based on mode
+    const routeOptions = document.getElementById('route-options');
+    const avoidTollsRow = document.getElementById('avoid-tolls').closest('.option-row');
+    const avoidHighwaysRow = document.getElementById('avoid-highways').closest('.option-row');
+    
+    if (mode === 'DRIVING') {
+      // Show all options for driving
+      avoidTollsRow.style.display = 'block';
+      avoidHighwaysRow.style.display = 'block';
+    } else {
+      // Hide tolls and highways for walking/biking (not applicable)
+      avoidTollsRow.style.display = 'none';
+      avoidHighwaysRow.style.display = 'none';
+    }
+    
     // Auto-recalculate if we already have origin and destination
     const origin = document.getElementById('origin-input').value.trim();
     const destination = document.getElementById('destination-input').value.trim();
@@ -517,18 +547,21 @@
       optimizeWaypoints: false // Keep the order user specified
     };
     
-    // Add mode-specific options
-    if (travelMode === 'WALKING') {
-      // Walking doesn't have many options, but ensure we use walkable paths
-    } else if (travelMode === 'BICYCLING') {
-      // Bicycling will prefer bike paths where available
-    } else if (travelMode === 'DRIVING') {
-      request.avoidFerries = false;
-      request.avoidHighways = false;
-      request.avoidTolls = false;
+    // Add avoidance options based on checkbox states
+    if (travelMode === 'DRIVING') {
+      request.avoidTolls = document.getElementById('avoid-tolls').checked;
+      request.avoidHighways = document.getElementById('avoid-highways').checked;
+      request.avoidFerries = document.getElementById('avoid-ferries').checked;
+    } else {
+      // For walking and bicycling, only ferries apply
+      request.avoidFerries = document.getElementById('avoid-ferries').checked;
     }
     
-    console.log('Requesting route with mode:', travelMode, 'waypoints:', waypointLocations.length);
+    console.log('Requesting route with mode:', travelMode, 'waypoints:', waypointLocations.length, 'options:', {
+      avoidTolls: request.avoidTolls,
+      avoidHighways: request.avoidHighways,
+      avoidFerries: request.avoidFerries
+    });
 
     directionsService.route(request, (result, status) => {
       document.getElementById('get-route-btn').disabled = false;
@@ -811,7 +844,17 @@
     const current = currentPointIndex + 1;
     const percent = total > 0 ? (current / total) * 100 : 0;
 
-    document.getElementById('progress-fill').style.width = percent + '%';
+    // Update progress fill - with null check
+    const progressFill = document.getElementById('progress-fill');
+    if (progressFill) {
+      progressFill.style.width = percent + '%';
+    }
+    
+    // Update position slider
+    const positionSlider = document.getElementById('position-slider');
+    if (positionSlider) {
+      positionSlider.value = percent;
+    }
     
     let statusText = '';
     if (total === 0) {
@@ -824,7 +867,10 @@
       statusText = `Paused at ${current} / ${total} points`;
     }
     
-    document.getElementById('progress-text').textContent = statusText;
+    const progressText = document.getElementById('progress-text');
+    if (progressText) {
+      progressText.textContent = statusText;
+    }
   }
 
   function showStatus(message, type) {
