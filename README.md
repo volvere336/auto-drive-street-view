@@ -49,7 +49,7 @@ Make sure billing is enabled on your project (required for Google Maps APIs).
 Place the following files together in the same folder:
 
 StreetViewRouteDriver/
-├── index.html       ← Main HTML file
+├── streetview.html       ← Main HTML file
 ├── app.js           ← JavaScript file (your code)
 └── style.css        ← Optional separate CSS (if you move it out of HTML)
 
@@ -64,7 +64,7 @@ You can keep CSS inside <style> in the HTML, as in your code, or move it to styl
 
 3. Open the App
 
-Open index.html in a modern browser (Chrome, Firefox, Edge).
+Open streetview.html in a modern browser (Chrome, Firefox, Edge).
 
 Enter your Google Maps API key in the input field.
 
